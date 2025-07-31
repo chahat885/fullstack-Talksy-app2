@@ -99,7 +99,6 @@ export const updateProfile = async (req, res) => {
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { profilePic: uploadResponse.secure_url,
-        bio:bio,
        },
       { new: true }
     );

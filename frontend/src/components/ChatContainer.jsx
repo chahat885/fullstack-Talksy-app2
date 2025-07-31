@@ -6,7 +6,7 @@ import MessageInput from "./MessageInput";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
 import { formatMessageTime } from "../lib/utils";
-import ProfileContainer from "./ProfileContainer";
+
 
 const ChatContainer = () => {
   const {
@@ -114,9 +114,9 @@ const ChatContainer = () => {
       </div>
 
       {/* Right: Profile Section */}
-      <div className="w-[250px] border-l border-zinc-300 hidden md:block">
+      {/* <div className="w-[250px] border-l border-zinc-300 hidden md:block">
         <ProfileContainer />
-      </div>
+      </div> */}
     </div>
   );
 };

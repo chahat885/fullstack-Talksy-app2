@@ -2,14 +2,14 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
+    fullName: {
+      type: String,
+      required: true,
+    },
     email: {
       type: String,
       required: true,
       unique: true,
-    },
-    fullName: {
-      type: String,
-      required: true,
     },
     password: {
       type: String,
@@ -20,7 +20,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

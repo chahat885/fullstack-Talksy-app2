@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { Eye, EyeOff, Loader2, Lock, Mail, MessageSquare, User } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // IMPORTED useNavigate
 
 import AuthImagePattern from "../components/AuthImagePattern";
 import toast from "react-hot-toast";
@@ -15,6 +15,7 @@ const SignUpPage = () => {
   });
 
   const { signup, isSigningUp } = useAuthStore();
+  const navigate = useNavigate(); // ADDED: Initialize the useNavigate hook
 
   const validateForm = () => {
     if (!formData.fullName.trim()) return toast.error("Full name is required");
@@ -26,12 +27,18 @@ const SignUpPage = () => {
     return true;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => { // CHANGED: Added 'async'
     e.preventDefault();
 
     const success = validateForm();
 
-    if (success === true) signup(formData);
+    if (success === true) {
+      const result = await signup(formData); // CHANGED: Await the signup function
+      if (result.success) {
+        // Redirect to the OTP verification page and pass the email in the state
+        navigate("/verify-otp", { state: { email: formData.email } });
+      }
+    }
   };
 
   return (
@@ -72,16 +79,27 @@ const SignUpPage = () => {
               </div>
             </div>
 
-            <div className="form-control">
+              {/* Updated email input with hover message */}
+            <div className="form-control group relative">
+              {/* Tooltip message that appears on hover */}
+              <div
+                className="absolute -top-1 left-1/2 -translate-x-1/2 z-10
+                           p-2 bg-gray-800 text-white text-xs rounded-md 
+                           whitespace-nowrap opacity-0 pointer-events-none transition-opacity
+                           group-hover:opacity-100 group-hover:pointer-events-auto"
+              >
+                Please enter a valid email
+              </div>
               <label className="label">
                 <span className="label-text font-medium">Email</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="size-5 text-base-content/40" />
+                  <Mail className="h-5 w-5 text-base-content/40" />
                 </div>
                 <input
                   type="email"
+                  name="email"
                   className={`input input-bordered w-full pl-10`}
                   placeholder="you@example.com"
                   value={formData.email}

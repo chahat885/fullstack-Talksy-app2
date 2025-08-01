@@ -11,13 +11,14 @@ export const useAuthStore = create((set, get) => ({
   isLoggingIn: false,
   isUpdatingProfile: false,
   isCheckingAuth: true,
+  isVerifyingOtp: false,
   onlineUsers: [],
   socket: null,
 
   checkAuth: async () => {
+    set({ isCheckingAuth: true });
     try {
       const res = await axiosInstance.get("/auth/check");
-
       set({ authUser: res.data });
       get().connectSocket();
     } catch (error) {
@@ -32,13 +33,29 @@ export const useAuthStore = create((set, get) => ({
     set({ isSigningUp: true });
     try {
       const res = await axiosInstance.post("/auth/signup", data);
-      set({ authUser: res.data });
-      toast.success("Account created successfully");
-      get().connectSocket();
+      toast.success(res.data.message);
+      return { success: true, email: data.email };
     } catch (error) {
       toast.error(error.response.data.message);
+      return { success: false, error: error.response.data.message };
     } finally {
       set({ isSigningUp: false });
+    }
+  },
+
+  verifyOtp: async (email, otp) => {
+    set({ isVerifyingOtp: true });
+    try {
+      const res = await axiosInstance.post("/auth/verify-otp", { email, otp });
+      set({ authUser: res.data });
+      toast.success(res.data.message);
+      get().connectSocket();
+      return { success: true };
+    } catch (error) {
+      toast.error(error.response.data.message);
+      return { success: false, error: error.response.data.message };
+    } finally {
+      set({ isVerifyingOtp: false });
     }
   },
 
@@ -48,7 +65,6 @@ export const useAuthStore = create((set, get) => ({
       const res = await axiosInstance.post("/auth/login", data);
       set({ authUser: res.data });
       toast.success("Logged in successfully");
-
       get().connectSocket();
     } catch (error) {
       toast.error(error.response.data.message);
@@ -81,6 +97,8 @@ export const useAuthStore = create((set, get) => ({
       set({ isUpdatingProfile: false });
     }
   },
+
+  
 
   connectSocket: () => {
     const { authUser } = get();

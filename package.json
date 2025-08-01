@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "nodemailer": "^7.0.5",
     "socket.io-client": "^4.8.1"
   }
 }

@@ -1,5 +1,5 @@
 import express from "express";
-import { generateToken } from "../controllers/getStream.controller.js";
+import { generateToken } from "../controllers/getstream.controller.js";
 
 const router = express.Router();
 

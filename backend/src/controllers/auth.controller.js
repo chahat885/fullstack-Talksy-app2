@@ -3,6 +3,7 @@ import Otp from "../models/otp.model.js";
 import bcryptjs from "bcryptjs";
 import {generateToken}   from "../lib/utils.js";
 import  {sendOtpEmail } from "../lib/sendemail.js";
+import { v2 as cloudinary } from "cloudinary";
 
 // @desc Auth user & get token
 // @route POST /api/auth/signup
@@ -182,43 +183,41 @@ export const logout = (req, res) => {
 // @access Private
 export const updateProfile = async (req, res) => {
   try {
-    const { fullName, email } = req.body;
-    const user = await User.findById(req.user._id);
+    console.log("update profile section");
+    const { profilePic } = req.body;
+    const userId = req.user._id;
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    if (!profilePic) {
+      return res.status(400).json({ message: "Profile picture is required." });
     }
-    
-    // Update user data
-    user.fullName = fullName || user.fullName;
-    
-    // Check if a new email is provided and handle verification
-    if (email && email !== user.email) {
-      user.isVerified = false;
-      user.email = email;
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      await Otp.deleteOne({ email });
-      await Otp.create({
-        fullName: user.fullName,
-        email: user.email,
-        password: user.password,
-        otp,
-      });
-      await sendOtpEmail(email, otp);
+
+    // Check if the Base64 string is valid by looking for the data URL prefix.
+    if (!profilePic.startsWith("data:image/")) {
+      return res.status(400).json({ message: "Invalid image format. Please upload a valid image." });
     }
+
+    // Attempt to upload the Base64 image to Cloudinary.
+    // If this fails, the catch block will handle the error.
+    const uploadResponse = await cloudinary.uploader.upload(profilePic);
+
+    if (!uploadResponse.secure_url) {
+      // Fallback in case Cloudinary upload succeeds but returns no URL.
+      return res.status(500).json({ message: "Image upload failed. Please try again." });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { profilePic: uploadResponse.secure_url },
+      { new: true }
+    );
     
-    await user.save();
-    
-    res.status(200).json({
-      _id: user._id,
-      fullName: user.fullName,
-      email: user.email,
-      profilePic: user.profilePic,
-      isVerified: user.isVerified,
-    });
-    
+    // Return the updated user object wrapped in a key.
+    res.status(200).json({ updatedUser });
   } catch (error) {
-    console.error("Error in updateProfile controller:", error.message);
-    res.status(500).json({ message: "Internal server error" });
+    console.log("Error in update profile:", error);
+    // Provide a more user-friendly error message than a generic 500.
+    res.status(500).json({ message: "Failed to update profile. Please try again later." });
   }
 };
+
+

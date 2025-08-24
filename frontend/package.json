@@ -10,6 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@stream-io/video-client": "^1.27.1",
+    "@stream-io/video-react-sdk": "^1.19.2",
+    "@tanstack/react-query": "^5.84.1",
     "axios": "^1.7.7",
     "chat-app": "file:..",
     "lucide-react": "^0.459.0",

@@ -87,12 +87,19 @@ export const useAuthStore = create((set, get) => ({
   updateProfile: async (data) => {
     set({ isUpdatingProfile: true });
     try {
+      // Send the profile data to the backend.
       const res = await axiosInstance.put("/auth/update-profile", data);
-      set({ authUser: res.data });
+      
+      // The backend should return the updated user object.
+      // This is the most crucial part.
+      set({ authUser: res.data.updatedUser });
+      
       toast.success("Profile updated successfully");
+      return true; // Return a boolean to indicate success
     } catch (error) {
       console.log("error in update profile:", error);
       toast.error(error.response.data.message);
+      return false; // Return false on error
     } finally {
       set({ isUpdatingProfile: false });
     }

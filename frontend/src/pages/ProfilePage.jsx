@@ -6,7 +6,7 @@ const ProfilePage = () => {
   const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
   const [selectedImg, setSelectedImg] = useState(null);
 
-  const handleImageUpload = async (e) => {
+ const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -16,8 +16,19 @@ const ProfilePage = () => {
 
     reader.onload = async () => {
       const base64Image = reader.result;
-      setSelectedImg(base64Image);
-      await updateProfile({ profilePic: base64Image });
+      
+      // 1. Set the temp state for immediate visual display
+      setSelectedImg(base64Image); 
+      
+      // 2. Await the updateProfile action
+      const success = await updateProfile({ profilePic: base64Image });
+      
+      // 3. IMPORTANT: If the update was successful, clear the temporary state. 
+      // The image will now be displayed via authUser.profilePic, which 
+      // the backend should have updated.
+      if (success) { 
+        setSelectedImg(null); // Clear the temporary Base64 state
+      }
     };
   };
 

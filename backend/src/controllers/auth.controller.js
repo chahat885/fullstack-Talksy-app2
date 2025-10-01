@@ -1,5 +1,8 @@
 import User from "../models/user.model.js";
-import Otp from "../models/otp.model.js";
+
+// In-memory store for pending users (email as key)
+const pendingUsers = {};
+// Removed Otp model import
 import bcryptjs from "bcryptjs";
 import {generateToken}   from "../lib/utils.js";
 import  {sendOtpEmail } from "../lib/sendemail.js";
@@ -22,34 +25,30 @@ export const signup = async (req, res) => {
     if (userExists) {
       return res.status(400).json({ message: "User already exists" });
     }
-    
+
     // Hash password
     const salt = await bcryptjs.genSalt(10);
     const hashedPassword = await bcryptjs.hash(password, salt);
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = Date.now() + 10 * 60 * 1000; // 10 min expiry
 
-    // Check if an unverified OTP record exists and delete it
-    await Otp.deleteOne({ email });
-
-    // Save temporary user data and OTP in the Otp collection
-    const newOtpRecord = new Otp({
+    // Store pending user in memory
+    pendingUsers[email] = {
       fullName,
       email,
       password: hashedPassword,
       otp,
-    });
-    
-    await newOtpRecord.save();
-    
+      otpExpiry,
+    };
+
     // Send OTP to user's email
     await sendOtpEmail(email, otp);
 
     res.status(201).json({ 
-      message: "User registered successfully. Please verify your email with the OTP sent to your inbox."
+      message: "OTP sent to your email. Please verify to complete registration."
     });
-    
   } catch (error) {
     console.error("Error in signup controller:", error.message);
     res.status(500).json({ message: "Internal server error" });
@@ -62,42 +61,41 @@ export const signup = async (req, res) => {
 export const verifyOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
-    
-    const otpRecord = await Otp.findOne({ email });
-    if (!otpRecord) {
-      return res.status(400).json({ message: "Invalid or expired OTP" });
+    const pending = pendingUsers[email];
+    if (!pending) {
+      return res.status(400).json({ message: "No pending registration found for this email." });
     }
-    
-    // Check if OTP matches and is not expired
-    if (otpRecord.otp !== otp || otpRecord.expiresAt < Date.now()) {
-      return res.status(400).json({ message: "Invalid or expired OTP ! SignUp Again" });
+    // Check if user already exists (should not happen)
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      delete pendingUsers[email];
+      return res.status(400).json({ message: "User already exists. Please login." });
     }
-    
-    // If OTP is valid, create the permanent user record
-    const user = new User({
-      fullName: otpRecord.fullName,
-      email: otpRecord.email,
-      password: otpRecord.password,
-      isVerified: true,
-    });
-    
-    await user.save();
-    
-    // Generate token and set cookie
-    generateToken(user._id, res);
-    
-    // Clean up OTP record
-    await Otp.deleteOne({ email });
-    
-    res.status(200).json({ 
-      message: "Email verified successfully!",
-      _id: user._id,
-      fullName: user.fullName,
-      email: user.email,
-      profilePic: user.profilePic,
-      isVerified: user.isVerified,
-    });
-    
+    // OTP match and not expired
+    if (pending.otp === otp && pending.otpExpiry > Date.now()) {
+      const user = new User({
+        fullName: pending.fullName,
+        email: pending.email,
+        password: pending.password,
+        isVerified: true,
+        otp: null,
+        otpExpiry: null,
+      });
+      await user.save();
+      delete pendingUsers[email];
+      generateToken(user._id, res);
+      return res.status(200).json({ 
+        message: "Email verified successfully!",
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        profilePic: user.profilePic,
+        isVerified: user.isVerified,
+      });
+    } else {
+      // OTP not match or expired
+      return res.status(400).json({ message: "Invalid or expired OTP! SignUp Again" });
+    }
   } catch (error) {
     console.error("Error in verifyOtp controller:", error.message);
     res.status(500).json({ message: "Internal server error" });
@@ -123,15 +121,10 @@ export const login = async (req, res) => {
     if (!user.isVerified) {
       // If not verified, re-send OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      await Otp.deleteOne({ email });
-      await Otp.create({
-        fullName: user.fullName,
-        email: user.email,
-        password: user.password,
-        otp,
-      });
+      user.otp = otp;
+      user.otpExpiry = Date.now() + 10 * 60 * 1000;
+      await user.save();
       await sendOtpEmail(email, otp);
-      
       return res.status(400).json({ message: "Your account is not verified. A new OTP has been sent to your email." });
     }
 

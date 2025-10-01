@@ -1,5 +1,5 @@
 import express from "express";
-// Import the new verifyOtp function from your controller
+// Import verifyOtp from controller (Otp model removed)
 import { checkAuth, login, logout, signup, updateProfile, verifyOtp } from "../controllers/auth.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 

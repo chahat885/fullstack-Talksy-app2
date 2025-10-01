@@ -5,6 +5,7 @@ import { Camera, Mail, User } from "lucide-react";
 const ProfilePage = () => {
   const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
   const [selectedImg, setSelectedImg] = useState(null);
+  const [showImgModal, setShowImgModal] = useState(false);
 
  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -48,8 +49,27 @@ const ProfilePage = () => {
               <img
                 src={selectedImg || authUser.profilePic || "/avatar.png"}
                 alt="Profile"
-                className="size-32 rounded-full object-cover border-4 "
+                className="size-32 rounded-full object-cover border-4 cursor-pointer"
+                onClick={() => setShowImgModal(true)}
               />
+          {/* Image Modal Popup */}
+          {showImgModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+              <div className="relative">
+                <img
+                  src={selectedImg || authUser.profilePic || "/avatar.png"}
+                  alt="Profile Full"
+                  className="max-w-[90vw] max-h-[80vh] rounded-lg shadow-lg"
+                />
+                <button
+                  className="absolute top-2 right-2 bg-white rounded-full p-2 shadow hover:bg-gray-200"
+                  onClick={() => setShowImgModal(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
               <label
                 htmlFor="avatar-upload"
                 className={`

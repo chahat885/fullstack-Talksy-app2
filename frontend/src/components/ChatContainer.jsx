@@ -1,5 +1,5 @@
 import { useChatStore } from "../store/useChatStore";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
@@ -23,6 +23,8 @@ const ChatContainer = () => {
   } = useChatStore();
 
   const { authUser } = useAuthStore();
+  const [showImgModal, setShowImgModal] = useState(false);
+  const [modalImgSrc, setModalImgSrc] = useState("");
   const messageEndRef = useRef(null);
 
   // Scroll and socket logic
@@ -95,9 +97,31 @@ const ChatContainer = () => {
                         <img
                           src={message.image}
                           alt="Attachment"
-                          className="sm:max-w-[200px] rounded-md mb-2"
+                          className="sm:max-w-[200px] rounded-md mb-2 cursor-pointer"
+                          onClick={() => {
+                            setModalImgSrc(message.image);
+                            setShowImgModal(true);
+                          }}
                         />
                       )}
+      {/* Image Modal Popup for chat images */}
+      {showImgModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+          <div className="relative">
+            <img
+              src={modalImgSrc}
+              alt="Chat Attachment Full"
+              className="max-w-[90vw] max-h-[80vh] rounded-lg shadow-lg"
+            />
+            <button
+              className="absolute top-2 right-2 bg-white rounded-full p-2 shadow hover:bg-gray-200"
+              onClick={() => setShowImgModal(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
                       {message.text && <p>{message.text}</p>}
                     </div>
                   </div>
